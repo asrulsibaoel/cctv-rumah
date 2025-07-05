@@ -1,23 +1,23 @@
 version: '3.8'
 
 services:
-  lavinmq:
-    image: ghcr.io/cloudamqp/lavinmq:latest
-    container_name: lavinmq
-    ports:
-      - "5672:5672"  # AMQP
-      - "15672:15672" # Web UI
-    environment:
-      - LAVINMQ_DEFAULT_USER=guest
-      - LAVINMQ_DEFAULT_PASS=guest
+  # lavinmq:
+  #   image: ghcr.io/cloudamqp/lavinmq:latest
+  #   container_name: lavinmq
+  #   ports:
+  #     - "5672:5672"  # AMQP
+  #     - "15672:15672" # Web UI
+  #   environment:
+  #     - LAVINMQ_DEFAULT_USER=guest
+  #     - LAVINMQ_DEFAULT_PASS=guest
 
-  milvus:
-    image: milvusdb/milvus:v2.3.9
-    container_name: milvus
-    ports:
-      - "19530:19530" # Milvus gRPC
-      - "9091:9091"   # Milvus HTTP
-    command: ["milvus", "run", "standalone"]
+  # milvus:
+  #   image: milvusdb/milvus:v2.3.9
+  #   container_name: milvus
+  #   ports:
+  #     - "19530:19530" # Milvus gRPC
+  #     - "9091:9091"   # Milvus HTTP
+  #   command: ["milvus", "run", "standalone"]
 
   publisher:
     build: ./publisher
@@ -37,7 +37,7 @@ services:
       - QUEUE_NAME=cctv.frames
       - TELEGRAM_BOT_TOKEN=your_bot_token
       - TELEGRAM_CHAT_ID=your_chat_id
-      - MILVUS_HOST=milvus
+      - MILVUS_HOST=${{MILVUS_HOST}}
       - COLLECTION_NAME=person_embeddings
     depends_on:
       - lavinmq

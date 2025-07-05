@@ -17,12 +17,25 @@ FRAME_INTERVAL = int(os.getenv("FRAME_INTERVAL", 5))  # Send every 5 frames
 params = pika.URLParameters(LAVINMQ_URL)
 connection = pika.BlockingConnection(params)
 channel = connection.channel()
-channel.queue_declare(queue=QUEUE_NAME, durable=True)
+channel.queue_declare(queue=QUEUE_NAME, durable=False,
+                      exclusive=False, auto_delete=False)
 
 # === Capture RTSP Stream ===
-cap = cv2.VideoCapture(RTSP_URL)
-if not cap.isOpened():
-    raise Exception(f"Failed to connect to RTSP stream: {RTSP_URL}")
+print(f"Streaming to: {RTSP_URL}")
+
+
+def get_capture(rtsp_url):
+    for _ in range(5):
+        cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
+        if cap.isOpened():
+            return cap
+        print("[WARN] Could not open stream. Retrying in 2 seconds...")
+        time.sleep(2)
+    raise RuntimeError(
+        "Failed to connect to RTSP stream after multiple attempts.")
+
+
+cap = get_capture(RTSP_URL)
 
 print("[INFO] Streaming and publishing frames to LavinMQ...")
 frame_count = 0
@@ -31,9 +44,9 @@ while True:
     ret, frame = cap.read()
     if not ret:
         print("[WARN] Frame grab failed. Reconnecting...")
-        time.sleep(2)
+        # time.sleep(2)
         cap.release()
-        cap = cv2.VideoCapture(RTSP_URL)
+        cap = get_capture(RTSP_URL)
         continue
 
     frame_count += 1
