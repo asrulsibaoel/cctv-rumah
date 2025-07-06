@@ -4,21 +4,22 @@ import cv2
 import pika
 import time
 import os
-import base64
 
 # === CONFIG ===
 RTSP_URL = os.getenv(
     "RTSP_URL", "rtsp://user:pass@camera-ip/Streaming/Channels/101")
 LAVINMQ_URL = os.getenv("LAVINMQ_URL", "amqp://guest:guest@your-lavinmq-host/")
-QUEUE_NAME = os.getenv("QUEUE_NAME", "cctv.frames")
+FRAME_EXCHANGE = os.getenv("FRAME_EXCHANGE", "cctv_frames")
 FRAME_INTERVAL = int(os.getenv("FRAME_INTERVAL", 5))  # Send every 5 frames
 
 # === LavinMQ Publisher Setup ===
 params = pika.URLParameters(LAVINMQ_URL)
 connection = pika.BlockingConnection(params)
 channel = connection.channel()
-channel.queue_declare(queue=QUEUE_NAME, durable=False,
-                      exclusive=False, auto_delete=False)
+channel.exchange_declare(exchange=FRAME_EXCHANGE,
+                         exchange_type='fanout',
+                         durable=True,
+                         passive=False)
 
 # === Capture RTSP Stream ===
 print(f"Streaming to: {RTSP_URL}")
@@ -58,13 +59,8 @@ while True:
 
     # Encode as JPEG
     _, jpeg = cv2.imencode(".jpg", resized)
-    channel.basic_publish(
-        exchange="",
-        routing_key=QUEUE_NAME,
-        body=jpeg.tobytes(),
-        properties=pika.BasicProperties(
-            delivery_mode=2)  # Make message persistent
-    )
+    channel.basic_publish(exchange=FRAME_EXCHANGE,
+                          routing_key='', body=jpeg.tobytes())
 
     print(f"[SENT] Frame published at {time.strftime('%H:%M:%S')}")
     time.sleep(0.1)  # Optional throttle
