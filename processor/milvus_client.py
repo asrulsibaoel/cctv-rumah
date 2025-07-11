@@ -39,7 +39,7 @@ if not client.has_collection(collection_name=MILVUS_COLLECTION):
 client.load_collection(collection_name=MILVUS_COLLECTION)
 
 
-def is_new_person(embedding: List[float], threshold=0.9) -> Tuple[bool, Optional[str]]:
+def is_new_person(embedding: List[float], threshold=0.7) -> Tuple[bool, Optional[str]]:
     try:
         # Ensure compatibility with Milvus schema
         embedding = [float(x) for x in embedding]
